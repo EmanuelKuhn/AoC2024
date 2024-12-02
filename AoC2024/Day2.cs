@@ -2,11 +2,9 @@
 
 namespace AoC2024;
 
-public class Day2
+public class Day2() : AoCDay(day: 2, hasTwoInputs: false)
 {
-    private const int Day = 2;
-    
-    private static long Part1(string input)
+    protected override long Part1(string input)
     {
         var reports = ParseInput(input);
         
@@ -25,7 +23,7 @@ public class Day2
         };
     }
 
-    private static long Part2(string input)
+    protected override long Part2(string input)
     {
         var reports = ParseInput(input);
         
@@ -52,39 +50,14 @@ public class Day2
     }
     
     [Test]
-    public void Example1()
+    [TestCase(1, 2)]
+    [TestCase(2, 4)]
+    public void Example(int part, long expected)
     {
-        var input = File.ReadAllText($"Examples/{Day}.txt");
-        Console.WriteLine(input);
-
-        var result = Part1(input);
+        var solveMethod = GetSolveExamplePart(part);
         
-        Assert.That(result, Is.EqualTo(2));
-    }
-
-    [Test]
-    public void Example2()
-    {
-        var input = File.ReadAllText($"Examples/{Day}.txt");
-        Console.WriteLine(input);
-    
-        var result = Part2(input);
+        var result = solveMethod();
         
-        Assert.That(result, Is.EqualTo(4));
-    }
-    
-    [Test]
-    public void Solve()
-    {
-        var input = File.ReadAllText($"Inputs/{Day}.txt");
-        var part1 = Part1(input);
-        
-        Console.WriteLine($"Day {Day}, part 1:");
-        Console.WriteLine(part1);
-        
-        var part2 = Part2(input);
-        
-        Console.WriteLine($"\nDay {Day}, part 2:");
-        Console.WriteLine(part2);
+        Assert.That(result, Is.EqualTo(expected));
     }
 }
