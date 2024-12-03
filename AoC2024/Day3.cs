@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace AoC2024;
@@ -9,7 +10,7 @@ public partial class Day3() : AoCDay(day: 3, hasTwoInputs: false)
     {
     }
     
-    public record Mul(int x, int y) : IInstruction;
+    public record Mul(int X, int Y) : IInstruction;
     public record Do() : IInstruction;
     public record DoNot() : IInstruction;
     
@@ -19,40 +20,22 @@ public partial class Day3() : AoCDay(day: 3, hasTwoInputs: false)
         
         foreach (Match match in MulRegex().Matches(input))
         {
-            var mul = ParseMul(match.Value);
-
-            if (mul is not null)
-            {
-                instructions.Add(mul);
-            }
+            instructions.Add(ParseMul(match.Groups));
         }
 
-        return instructions.Select(mul => mul.x * mul.y).Sum();
+        return instructions.Select(mul => mul.X * mul.Y).Sum();
     }
-
-    private Mul? ParseMul(string input)
-    {
-        var digitsStrings = input.Split('(').Skip(1).First().Split(')').First().Split(',');
-        
-        if (digitsStrings.Any(x => x.Length > 3)) return null;
-        
-        var digits = digitsStrings.Select(int.Parse).ToImmutableArray();
-
-        return digits.Length != 2 ? null : new Mul(digits.First(), digits.Skip(1).First());
-    }
-    
-    [GeneratedRegex(@"mul\(\d+,\d+\)")]
+ 
+    [GeneratedRegex(@"mul\((\d+),(\d+)\)")]
     private static partial Regex MulRegex();
-
-    [GeneratedRegex(@"do\(\)")]
-    private static partial Regex DoRegex();
-
-    [GeneratedRegex(@"don't\(\)")]
-    private static partial Regex DonotRegex();
     
-    [GeneratedRegex(@"mul\(\d+,\d+\)|do\(\)|don't\(\)")]
+    [GeneratedRegex(@"mul\((\d+),(\d+)\)|do\(\)|don't\(\)")]
     private static partial Regex InstructionRegex();
 
+    private static Mul ParseMul(GroupCollection matchGroups)
+    {
+        return new Mul(int.Parse(matchGroups[1].Value), int.Parse(matchGroups[2].Value));
+    }
     
     protected override long Part2(string input)
     {
@@ -60,20 +43,20 @@ public partial class Day3() : AoCDay(day: 3, hasTwoInputs: false)
         
         foreach (Match match in InstructionRegex().Matches(input))
         {
-            if (DoRegex().IsMatch(match.Value))
+            switch (match.Value)
             {
-                instructions.Add(new Do());
-            } else if (DonotRegex().IsMatch(match.Value))
-            {
-                instructions.Add(new DoNot());
-            }
-            else
-            {
-                var mul = ParseMul(match.Value);
-
-                if (mul is not null)
+                case "do()":
+                    instructions.Add(new Do());
+                    break;
+                case "don't()":
+                    instructions.Add(new DoNot());
+                    break;
+                default:
                 {
-                    instructions.Add(mul);
+                    Trace.Assert(match.Groups.Count == 3);
+                    
+                    instructions.Add(ParseMul(match.Groups));
+                    break;
                 }
             }
         }
@@ -94,7 +77,7 @@ public partial class Day3() : AoCDay(day: 3, hasTwoInputs: false)
                 case Mul mul:
                     if (isEnabled)
                     {
-                        result += mul.x * mul.y;
+                        result += mul.X * mul.Y;
                     }
 
                     break;
