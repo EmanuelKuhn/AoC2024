@@ -19,11 +19,11 @@ public abstract class AoCDay
         }
         else
         {
-            InputPart1 = File.ReadAllText($"Inputs/{Day}.txt");
             ExamplePart1 = File.ReadAllText($"Examples/{Day}.txt");
+            ExamplePart2 = ExamplePart1;
         
+            InputPart1 = File.ReadAllText($"Inputs/{Day}.txt");
             InputPart2 = InputPart1;
-            ExamplePart2 = ExamplePart1;   
         }
     }
 
