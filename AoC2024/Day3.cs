@@ -1,29 +1,21 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace AoC2024;
 
 public partial class Day3() : AoCDay(day: 3, hasTwoInputs: false)
 {
-    private interface IInstruction
+    private record Mul(int X, int Y)
     {
+        public int Result => X * Y;
     }
-    
-    public record Mul(int X, int Y) : IInstruction;
-    public record Do() : IInstruction;
-    public record DoNot() : IInstruction;
     
     protected override long Part1(string input)
     {
-        List<Mul> instructions = [];
-        
-        foreach (Match match in MulRegex().Matches(input))
-        {
-            instructions.Add(ParseMul(match.Groups));
-        }
-
-        return instructions.Select(mul => mul.X * mul.Y).Sum();
+        return MulRegex()
+            .Matches(input)
+            .Select(m => ParseMul(m.Groups))
+            .Sum(mul => mul.Result);
     }
  
     [GeneratedRegex(@"mul\((\d+),(\d+)\)")]
@@ -34,53 +26,35 @@ public partial class Day3() : AoCDay(day: 3, hasTwoInputs: false)
 
     private static Mul ParseMul(GroupCollection matchGroups)
     {
+        Trace.Assert(matchGroups.Count == 3);
+        
         return new Mul(int.Parse(matchGroups[1].Value), int.Parse(matchGroups[2].Value));
     }
     
     protected override long Part2(string input)
     {
-        List<IInstruction> instructions = [];
+        var isEnabled = true;
+        var result = 0;
         
         foreach (Match match in InstructionRegex().Matches(input))
         {
             switch (match.Value)
             {
                 case "do()":
-                    instructions.Add(new Do());
+                    isEnabled = true;
                     break;
                 case "don't()":
-                    instructions.Add(new DoNot());
+                    isEnabled = false;
                     break;
                 default:
                 {
-                    Trace.Assert(match.Groups.Count == 3);
-                    
-                    instructions.Add(ParseMul(match.Groups));
-                    break;
-                }
-            }
-        }
-
-        var isEnabled = true;
-        var result = 0;
-
-        foreach (var instruction in instructions)
-        {
-            switch (instruction)
-            {
-                case Do:
-                    isEnabled = true;
-                    break;
-                case DoNot:
-                    isEnabled = false;
-                    break;
-                case Mul mul:
                     if (isEnabled)
                     {
-                        result += mul.X * mul.Y;
+                        result += ParseMul(match.Groups).Result;   
                     }
-
+                    
                     break;
+                }
             }
         }
 
@@ -92,9 +66,12 @@ public partial class Day3() : AoCDay(day: 3, hasTwoInputs: false)
     [TestCase(2, 48)]
     public void Example(int part, long expected)
     {
-        var solveMethod = GetSolveExamplePart(part);
-        
-        var result = solveMethod();
+        var result = part switch
+        {
+            1 => Part1(ExamplePart1),
+            2 => Part2(ExamplePart2),
+            _ => throw new ArgumentOutOfRangeException(nameof(part)),
+        };
         
         Assert.That(result, Is.EqualTo(expected));
     }
