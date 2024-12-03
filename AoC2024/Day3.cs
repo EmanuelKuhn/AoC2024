@@ -18,10 +18,10 @@ public partial class Day3() : AoCDay(day: 3, hasTwoInputs: false)
             .Sum(mul => mul.Result);
     }
  
-    [GeneratedRegex(@"mul\((\d+),(\d+)\)")]
+    [GeneratedRegex(@"mul\((\d{1,3}),(\d{1,3})\)")]
     private static partial Regex MulRegex();
     
-    [GeneratedRegex(@"mul\((\d+),(\d+)\)|do\(\)|don't\(\)")]
+    [GeneratedRegex(@"mul\((\d{1,3}),(\d{1,3})\)|do\(\)|don't\(\)")]
     private static partial Regex InstructionRegex();
 
     private static Mul ParseMul(GroupCollection matchGroups)
