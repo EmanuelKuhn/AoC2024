@@ -1,12 +1,15 @@
-﻿namespace AoC2024;
+﻿using System.Diagnostics;
+
+namespace AoC2024;
 
 public class Day4() : AoCDay(day: 4, hasTwoInputs: false)
 {
+    private const char NewLine = '\n';
+    
     protected override long Part1(string input)
     {
-        var lines = input.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
-        var grid = lines.Select(x => x.ToCharArray()).ToArray();
-        
+        var grid = ParseGrid(input);
+
         var result = 0L;
 
         
@@ -14,6 +17,7 @@ public class Day4() : AoCDay(day: 4, hasTwoInputs: false)
         {
             for (int y = 0; y < grid.Length; y++)
             {
+                Console.WriteLine((x, y));
                 result += checkXMAS(grid, x, y);
             }
         }
@@ -21,19 +25,31 @@ public class Day4() : AoCDay(day: 4, hasTwoInputs: false)
         return result;
     }
 
+    private static char[][] ParseGrid(string input)
+    {
+        var lines = input.Split(NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
+        var grid = lines.Select(x => x.ToCharArray()).ToArray();
+
+        Trace.Assert(grid.Length == grid[0].Length);
+        
+        foreach (var line in lines)
+        {
+            Console.WriteLine(line);
+        }
+        
+        Console.WriteLine((grid.Length, grid[0].Length));
+        return grid;
+    }
+
     private long checkXMAS(char[][] grid, int x, int y)
     {
         (int, int)[] orientations = [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1)];
 
-        return orientations.Select(o => checkDiagonal("XMAS".ToCharArray(), grid, x, y, o)).Sum();
+        return orientations.Count(o => checkDiagonal("XMAS".ToCharArray(), grid, x, y, o.Item1, o.Item2));
     }
 
-    private int checkDiagonal(char[] word, char[][] grid, int x, int y, (int, int) orientation)
+    private bool checkDiagonal(char[] word, char[][] grid, int x, int y, int oy, int ox)
     {
-
-        var oy = orientation.Item1;
-        var ox = orientation.Item2;
-        
         return word.Select((c, i) =>
         {
             var yIndex = y + oy * i;
@@ -43,38 +59,45 @@ public class Day4() : AoCDay(day: 4, hasTwoInputs: false)
             {
                 return false;
             }
+
+            var gridCel = grid[yIndex][xIndex];
             
-            return grid[yIndex][xIndex] == c;
-        }).All(x => x) ? 1 : 0;
-    }
-    
-    private long checkMASMAS(char[][] grid, int x, int y)
-    {
-        List<(int, int)> os = [(1, 1), (-1, -1), (1, -1), (-1, 1)];
-
-        var word = "MAS".ToCharArray();
-        throw new NotImplementedException();
-
-        // return os.Select(o => checkDiagonal(word, grid, x, y, o)).Sum();
+            return gridCel == c;
+        }).All(b => b);
     }
     
     protected override long Part2(string input)
     {
-        var lines = input.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries).ToList();
-        var grid = lines.Select(x => x.ToCharArray()).ToArray();
+        var grid = ParseGrid(input);
         
         var result = 0L;
-
         
         for (int x = 0; x < grid.Length; x++)
         {
             for (int y = 0; y < grid.Length; y++)
             {
-                result += checkMASMAS(grid, x, y);
+                result += checkMASMAS(grid, x, y) ? 1 : 0;
             }
         }
 
         return result;
+    }
+    
+    private bool checkMASMAS(char[][] grid, int x, int y)
+    {
+        var word = "MAS".ToCharArray();
+
+        if (grid[y][x] != 'A')
+        {
+            return false;
+        }
+
+        var d1 = checkDiagonal(word, grid, x - 1, y - 1, 1, 1) || checkDiagonal(word, grid, x + 1, y + 1, -1, -1);
+        var d2 = checkDiagonal(word, grid, x - 1, y + 1, -1, 1) || checkDiagonal(word, grid, x + 1, y - 1, 1, -1);
+        
+        var isXMas = d1 && d2;
+
+        return isXMas;
     }
     
     [Test]
