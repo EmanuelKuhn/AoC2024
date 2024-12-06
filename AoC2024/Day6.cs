@@ -7,7 +7,7 @@ namespace AoC2024;
 public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
 {
     [Flags]
-    private enum Directions
+    private enum Orientation
     {
         Up, 
         Down, 
@@ -15,15 +15,27 @@ public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
         Right
     }
     
-    private Directions ParseDirection(char c)
+    private Orientation ParseDirection(char c)
     {
         return c switch
         {
-            '^' => Directions.Up,
-            'v' => Directions.Down,
-            '<' => Directions.Left,
-            '>' => Directions.Right,
+            '^' => Orientation.Up,
+            'v' => Orientation.Down,
+            '<' => Orientation.Left,
+            '>' => Orientation.Right,
             _ => throw new ArgumentOutOfRangeException(nameof(c), c, null)
+        };
+    }
+    
+    private static Orientation TurnRight(Orientation direction)
+    {
+        return direction switch
+        {
+            Orientation.Up => Orientation.Right,
+            Orientation.Down => Orientation.Left,
+            Orientation.Left => Orientation.Up,
+            Orientation.Right => Orientation.Down,
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
         };
     }
 
@@ -38,19 +50,19 @@ public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
         
         
         
-        public Vec2 MoveUnit(char direction)
+        public Vec2 MoveUnit(Orientation direction)
         {
             return Move(AsUnit(direction));
         }
         
-        public static Vec2 AsUnit(char direction)
+        public static Vec2 AsUnit(Orientation direction)
         {
             return direction switch
-            {
-                '^' => new Vec2(-1, 0),
-                'v' => new Vec2(1, 0),
-                '<' => new Vec2(0, -1),
-                '>' => new Vec2(0, 1),
+            { 
+                Orientation.Up => new Vec2(-1, 0),
+                Orientation.Down => new Vec2(1, 0),
+                Orientation.Left => new Vec2(0, -1),
+                Orientation.Right => new Vec2(0, 1),
                 _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
             };
         }
@@ -61,10 +73,10 @@ public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
         Vec2 Position { get; }
     }
 
-    private class Guard(Vec2 position, char direction) : IGridItem
+    private class Guard(Vec2 position, Orientation direction) : IGridItem
     {
         public Vec2 Position { get; private set; } = position;
-        public char Direction { get; private set; } = direction;
+        public Orientation Direction { get; private set; } = direction;
 
         public void Move(FrozenSet<Vec2> obstructions)
         {
@@ -77,18 +89,6 @@ public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
             }
 
             Position = maybeNewPosition;
-        }
-
-        private char TurnRight(char direction)
-        {
-            return direction switch
-            {
-                '^' => '>',
-                'v' => '<',
-                '<' => '^',
-                '>' => 'v',
-                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-            };
         }
     }
 
@@ -152,7 +152,7 @@ public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
             {
                 if (_guardSymbols.Contains(row[c]))
                 {
-                    return new Guard(new Vec2(r, c), row[c]);
+                    return new Guard(new Vec2(r, c), ParseDirection(row[c]));
                 }
             }
         }
@@ -178,7 +178,10 @@ public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
         
         var isInGrid = true;
 
-        HashSet<Vec2> visited = [guard.Position];
+        Dictionary<Vec2, Orientation> visited = [];
+        visited.Add(guard.Position, guard.Direction);
+        
+        var path = new Stack<(Vec2 Position, Orientation Direction)>();
         
         while (isInGrid)
         {
@@ -188,17 +191,90 @@ public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
 
             if (isInGrid)
             {
-                visited.Add(guard.Position);
+                if (visited.TryGetValue(guard.Position, out var prevDirections))
+                {
+                    visited[guard.Position] |= guard.Direction;
+                }
+                else
+                {
+                    visited.Add(guard.Position, guard.Direction);
+                }
+                
+                path.Push((guard.Position, guard.Direction));
             }
         }
 
-        return visited.Count;
+        Console.WriteLine($"{visited.Count}; {path.Count}; {path.Peek().Position}");
 
+        var options = new HashSet<Vec2>();
+        
+        foreach (var (position, direction) in path)
+        {
+            var nextPosition = position.MoveUnit(direction);
+            
+            // There is already an obstruction
+            if (obstructions.Contains(nextPosition)) continue;
+            
+            var nextPositionWhenBlocked = position.MoveUnit(TurnRight(direction));
+            
+            if (visited.ContainsKey(nextPositionWhenBlocked) &&
+                visited[nextPositionWhenBlocked] == TurnRight(direction))
+            {
+                options.Add(nextPosition);
+            }
+        }
+        
+        Console.WriteLine("options:");
+        Console.WriteLine(string.Join("\n", options));
+
+        char[][] newGrid = charGrid.Select(r => r.Select(i => i).ToArray()).ToArray();
+
+        foreach (var (p, o) in visited)
+        {
+            newGrid[p.R][p.C] = ToChar(o);
+        }
+
+        foreach (var option in options)
+        {
+            char[][] optionGrid = newGrid.Select(r => r.Select(i => i).ToArray()).ToArray();
+            
+            optionGrid[option.R][option.C] = 'O';
+            
+            Console.WriteLine($"\nAn option ({option}):");
+            PrintGrid(optionGrid);
+        }
+        
+
+        return options.Count;
+    }
+
+    private void PrintGrid(char[][] newGrid)
+    {
+        for (int r = 0; r < newGrid.Length; r++)
+        {
+            var row = newGrid[r];
+            Console.WriteLine(new string(row));
+        }
+    }
+
+    private char ToChar(Orientation orientation)
+    {
+        if (orientation.HasFlag(Orientation.Up) || orientation.HasFlag(Orientation.Down))
+        {
+            if (orientation.HasFlag(Orientation.Left) || orientation.HasFlag(Orientation.Right))
+            {
+                return '+';
+            }
+
+            return '|';
+        }
+
+        return '-';
     }
 
     [Test]
     [TestCase(1, 41)]
-    [TestCase(2, 100)]
+    [TestCase(2, 6)]
     public void Example(int part, long expected)
     {
         var result = part switch
