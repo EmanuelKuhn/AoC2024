@@ -1,6 +1,4 @@
-﻿using System.Collections.Frozen;
-
-namespace AoC2024;
+﻿namespace AoC2024;
 
 public class Day7() : AoCDay(day: 7, hasTwoInputs: false)
 {
@@ -8,21 +6,28 @@ public class Day7() : AoCDay(day: 7, hasTwoInputs: false)
     {
         var entries = ParseInput(input);
 
-        return entries.Where(e => IsValid1(e.testValue, e.numbers)).Select(e => e.testValue).Sum();
+        return entries.AsParallel()
+            .Where(e => IsValid1(e.testValue, e.numbers))
+            .Select(e => e.testValue)
+            .Sum();
     }
 
     protected override long Part2(string input)
     {
         var entries = ParseInput(input);
 
-        return entries.Where(e => IsValid2(e.testValue, e.numbers)).Select(e => e.testValue).Sum();
+        return entries
+            .AsParallel()
+            .Where(e => IsValid2(e.testValue, e.numbers))
+            .Select(e => e.testValue)
+            .Sum();
     }
     
-    private bool IsValid1(long testValue, long[] numbers) => IsValid(testValue, numbers, false);
+    private static bool IsValid1(long testValue, long[] numbers) => IsValid(testValue, numbers.ToArray(), false);
     
-    private bool IsValid2(long testValue, long[] numbers) => IsValid(testValue, numbers, true);
+    private static bool IsValid2(long testValue, long[] numbers) => IsValid(testValue, numbers.ToArray(), true);
     
-    private bool IsValid(long testValue, long[] numbers, bool allowConcat)
+    private static bool IsValid(long testValue, long[] numbers, bool allowConcat)
     {
         if (numbers.Length == 1)
         {
@@ -37,10 +42,13 @@ public class Day7() : AoCDay(day: 7, hasTwoInputs: false)
 
         if (allowConcat)
         {
-            options.Add(long.Parse($"{numbers[0].ToString()}{numbers[1].ToString()}"));
+            options.Add(long.Parse(string.Concat(numbers[0], numbers[1])));
         }
         
-        return options.Any(o => IsValid(testValue, [o, ..numbers.Skip(2)], allowConcat));
+        return options
+            .Any(o => 
+                    o <= testValue && // If the number is already bigger than test value, it will never be equal
+                    IsValid(testValue, [o, ..numbers[2..]], allowConcat));
     }
 
     private static List<(long testValue, long[] numbers)> ParseInput(string input)
@@ -58,7 +66,6 @@ public class Day7() : AoCDay(day: 7, hasTwoInputs: false)
         
         return (testValue, numbers);
     }
-
 
     [Test]
     [TestCase(1, 3749)]
