@@ -6,7 +6,8 @@ public class Day7() : AoCDay(day: 7, hasTwoInputs: false)
     {
         var entries = ParseInput(input);
 
-        return entries.AsParallel()
+        return entries
+            .AsParallel()
             .Where(e => IsValid1(e.testValue, e.numbers))
             .Select(e => e.testValue)
             .Sum();
@@ -23,32 +24,43 @@ public class Day7() : AoCDay(day: 7, hasTwoInputs: false)
             .Sum();
     }
     
-    private static bool IsValid1(long testValue, long[] numbers) => IsValid(testValue, numbers.ToArray(), false);
+    private static bool IsValid1(long testValue, long[] numbers) => IsValid(testValue, numbers, false);
     
-    private static bool IsValid2(long testValue, long[] numbers) => IsValid(testValue, numbers.ToArray(), true);
-    
-    private static bool IsValid(long testValue, long[] numbers, bool allowConcat)
+    private static bool IsValid2(long testValue, long[] numbers) => IsValid(testValue, numbers, true);
+
+    private static bool IsValid(long testValue, ReadOnlySpan<long> numbers, bool allowConcat)
     {
         if (numbers.Length == 1)
         {
             return testValue == numbers[0];
         }
-
-        List<long> options =
-        [
-            numbers[0] * numbers[1], 
-            numbers[0] + numbers[1],
-        ];
-
-        if (allowConcat)
+        
+        if (testValue > numbers[^1] &&
+            IsValid(testValue - numbers[^1], numbers[..^1], allowConcat))
         {
-            options.Add(long.Parse(string.Concat(numbers[0], numbers[1])));
+            return true;
+        }
+
+        if (testValue % numbers[^1] == 0 &&
+            IsValid(testValue / numbers[^1], numbers[..^1], allowConcat))
+        {
+            return true;
         }
         
-        return options
-            .Any(o => 
-                    o <= testValue && // If the number is already bigger than test value, it will never be equal
-                    IsValid(testValue, [o, ..numbers[2..]], allowConcat));
+        if (allowConcat)
+        {
+            var testValueString = testValue.ToString();
+            var lastNumberString = numbers[^1].ToString();
+
+            if (testValueString.EndsWith(lastNumberString) && 
+                !testValueString.SequenceEqual(lastNumberString) &&
+                IsValid(long.Parse(testValue.ToString().AsSpan()[..^lastNumberString.Length]), numbers[..^1], allowConcat))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static List<(long testValue, long[] numbers)> ParseInput(string input)
