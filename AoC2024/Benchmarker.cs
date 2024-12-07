@@ -25,8 +25,8 @@ public static class Benchmarker
 
     public static void Summarize(this BenchmarkResult result, string label)
     {
-        var average = result.ElapsedTimes.Average(ts => ts.Microseconds);
+        var average = result.ElapsedTimes.Average(ts => ts.TotalSeconds);
         
-        Console.WriteLine($"[{label}] Average: {average} microseconds of {result.ElapsedTimes.Length} runs");
+        Console.WriteLine($"[{label}] Average: {average} seconds of {result.ElapsedTimes.Length} runs");
     }
 }
