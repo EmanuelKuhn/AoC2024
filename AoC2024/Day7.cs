@@ -8,28 +8,39 @@ public class Day7() : AoCDay(day: 7, hasTwoInputs: false)
     {
         var entries = ParseInput(input);
 
-        return entries.Where(e => IsValid(e.testValue, e.numbers)).Select(e => e.testValue).Sum();
+        return entries.Where(e => IsValid1(e.testValue, e.numbers)).Select(e => e.testValue).Sum();
     }
 
-    private bool IsValid(long testValue, long[] numbers)
+    protected override long Part2(string input)
+    {
+        var entries = ParseInput(input);
+
+        return entries.Where(e => IsValid2(e.testValue, e.numbers)).Select(e => e.testValue).Sum();
+    }
+    
+    private bool IsValid1(long testValue, long[] numbers) => IsValid(testValue, numbers, false);
+    
+    private bool IsValid2(long testValue, long[] numbers) => IsValid(testValue, numbers, true);
+    
+    private bool IsValid(long testValue, long[] numbers, bool allowConcat)
     {
         if (numbers.Length == 1)
         {
             return testValue == numbers[0];
         }
-        if (numbers.Length == 2)
+
+        List<long> options =
+        [
+            numbers[0] * numbers[1], 
+            numbers[0] + numbers[1],
+        ];
+
+        if (allowConcat)
         {
-            return IsValid(testValue, [numbers[0] * numbers[1]]) ||
-                   IsValid(testValue, [numbers[0] + numbers[1]]);
+            options.Add(long.Parse($"{numbers[0].ToString()}{numbers[1].ToString()}"));
         }
         
-        return IsValid(testValue, [numbers[0] * numbers[1], ..numbers.Skip(2)]) ||
-               IsValid(testValue, [numbers[0] + numbers[1], ..numbers.Skip(2)]);
-    }
-
-    protected override long Part2(string input)
-    {
-        return 0;
+        return options.Any(o => IsValid(testValue, [o, ..numbers.Skip(2)], allowConcat));
     }
 
     private static List<(long testValue, long[] numbers)> ParseInput(string input)
@@ -51,7 +62,7 @@ public class Day7() : AoCDay(day: 7, hasTwoInputs: false)
 
     [Test]
     [TestCase(1, 3749)]
-    [TestCase(2, 6)]
+    [TestCase(2, 11387)]
     public void Example(long part, long expected)
     {
         var result = part switch
