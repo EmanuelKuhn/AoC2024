@@ -10,7 +10,7 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
 
     private record Map(ImmutableDictionary<Vec2, char> Grid, Vec2 Size)
     {
-        public void PrintAntiNodes(IEnumerable<Vec2> antiNodes)
+        public void PrintAntiNodes(ISet<Vec2> antiNodes)
         {
             Console.WriteLine();
 
@@ -72,8 +72,8 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
             .Where(
                 o =>
                     o.IsInGrid(size) &&
-                    (Math.Abs(o.Distance(a1) - 2 * o.Distance(a2)) < Epsilon ||
-                    Math.Abs(o.Distance(a2) - 2 * o.Distance(a1)) < Epsilon))
+                    (o.ManhattanDistance(a1) == 2 * o.ManhattanDistance(a2) ||
+                     o.ManhattanDistance(a2) == 2 * o.ManhattanDistance(a1)))
             .ToFrozenSet();
         
         Trace.Assert(antiNodes.Count <= 2);
@@ -82,9 +82,7 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
         
         return antiNodes;
     }
-
-    private const double Epsilon = 1e-6;
-
+    
     private Map MakeGridDict(char[][] charGrid)
     {
         var size = new Vec2(charGrid.Length, charGrid[0].Length);
@@ -116,7 +114,7 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
         }
 
         var antiNodes = map.Grid.GroupBy(pair => pair.Value)
-            .SelectMany(grouping => AntiNodes2(grouping.Key, [..grouping.Select(pair => pair.Key)], map))
+            .SelectMany(grouping => AntiNodes2([..grouping.Select(pair => pair.Key)], map))
             .ToFrozenSet();
         
         map.PrintAntiNodes(antiNodes);
@@ -124,7 +122,7 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
         return antiNodes.Count;
     }
 
-    private FrozenSet<Vec2> AntiNodes2(char type, ImmutableArray<Vec2> antennaLocations, Map map)
+    private FrozenSet<Vec2> AntiNodes2(ImmutableArray<Vec2> antennaLocations, Map map)
     {
         var pairs = from a1 in antennaLocations from a2 in antennaLocations where a1 != a2 select new { a1, a2 };
 
@@ -178,11 +176,6 @@ internal static class Vec2Extensions
     public static long ManhattanDistance(this Vec2 a, Vec2 b)
     {
         return Math.Abs(a.R - b.R) + Math.Abs(a.C - b.C); 
-    }
-    
-    public static double Distance(this Vec2 a, Vec2 b)
-    {
-        return Math.Sqrt(Math.Pow(a.R - b.R, 2) + Math.Pow(a.C - b.C, 2)); 
     }
     
     public static bool IsInGrid(this Vec2 position, Vec2 gridSize)
