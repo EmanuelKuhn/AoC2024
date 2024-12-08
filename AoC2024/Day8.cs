@@ -57,8 +57,6 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
 
         var antinodes = pairs.SelectMany(p => AntiNodesForPair(p.a1, p.a2, size)).Distinct().ToArray();
         
-        Debug.WriteLine($"For {type}; found antinodes: {string.Join(',', antinodes.OrderBy(n => n.R).ThenBy(n => n.C))}");
-        
         return antinodes.ToFrozenSet();
     }
 
@@ -107,11 +105,6 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
         var charGrid = ParseInput(input);
 
         var map = MakeGridDict(charGrid);
-        
-        foreach (var grouping in map.Grid.GroupBy(pair => pair.Value))
-        {
-            Debug.WriteLine($"{grouping.Key}: {string.Join(',', grouping.Select(p => p.Key))}");
-        }
 
         var antiNodes = map.Grid.GroupBy(pair => pair.Value)
             .SelectMany(grouping => AntiNodes2([..grouping.Select(pair => pair.Key)], map))
