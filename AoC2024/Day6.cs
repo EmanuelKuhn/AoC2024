@@ -200,19 +200,6 @@ public class Day6() : AoCDay(day: 6, hasTwoInputs: false)
     }
 }
 
-public readonly record struct Vec2(int R, int C)
-{
-    public Vec2 Moved(Vec2 v)
-    {
-        return new Vec2(R + v.R, C + v.C);
-    }
-        
-    public Vec2 Moved(char direction)
-    {
-        return Moved(direction.AsUnit());
-    }
-}
-
 public static class Directions
 {
     public const char Up = '^';
