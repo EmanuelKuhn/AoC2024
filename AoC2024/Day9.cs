@@ -95,23 +95,15 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
     {
         var compacted = disk.ToArray().AsSpan();
         var freeBlocks = ScanFreeSpace(compacted);
+        var files = ScanFiles(compacted);
 
-        var fileId = disk.Max().Value;
+        var fileId = files.Keys.Max();
 
         // A for loop might have been easier...
         while (fileId > 0)
         {
-            // Console.WriteLine(DiskToString(compacted.ToArray()));
-            
-            var fileStart = Array.IndexOf(disk, fileId);
-            var fileEnd = Array.LastIndexOf(disk, fileId) + 1;
+            var (fileStart, fileEnd) = files[fileId];
 
-            if (fileStart == -1)
-            {
-                fileId--;
-                continue;
-            }
-            
             var fileLength = fileEnd - fileStart;
             
             var freeBlockIndex = freeBlocks.FindIndex(match => (match.end - match.start) >= fileLength);
@@ -126,12 +118,12 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
                 {
                     fileId--;
                     continue;
-                };
-                
+                }
+
                 source.CopyTo(destination);
                 source.Clear();
 
-                // Update freeblocks
+                // Update freeBlocks
                 if (freeBlock.start + fileLength == freeBlock.end)
                 {
                     freeBlocks.RemoveAt(freeBlockIndex);
@@ -148,6 +140,28 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
         }
         
         return compacted.ToArray();
+    }
+
+    private static Dictionary<int, (int start, int end)> ScanFiles(Span<int?> disk)
+    {
+        Dictionary<int, (int start, int end)> files = [];
+        
+        var currentPointer = 0;
+        while (currentPointer < disk.Length)
+        {
+            while (currentPointer < disk.Length && !disk[currentPointer].HasValue) currentPointer++;
+            if (currentPointer >= disk.Length) break;
+            
+            var currentFile = disk[currentPointer]!.Value;
+            var startBlock = currentPointer;
+            
+            while (currentPointer < disk.Length && disk[currentPointer] == currentFile) currentPointer++;
+            var endBlock = currentPointer;
+            
+            files.Add(currentFile, (startBlock, endBlock));
+        }
+
+        return files;
     }
 
     private static List<(int start, int end)> ScanFreeSpace(ReadOnlySpan<int?> disk)
