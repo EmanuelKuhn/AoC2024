@@ -1,6 +1,4 @@
-﻿using System.Diagnostics;
-
-namespace AoC2024;
+﻿namespace AoC2024;
 
 public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
 {
@@ -15,7 +13,7 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
         return CheckSum(disk);
     }
 
-    private long CheckSum(int?[] disk)
+    private static long CheckSum(int?[] disk)
     {
         return disk.Select((fileId, block) => fileId.HasValue ? (long)(fileId.Value * block): 0).Sum();
     }
@@ -97,54 +95,44 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
         var freeBlocks = ScanFreeSpace(compacted);
         var files = ScanFiles(compacted);
 
-        var fileId = files.Keys.Max();
-
-        // A for loop might have been easier...
-        while (fileId > 0)
+        foreach (var (fileStart, fileEnd) in files.Reverse())
         {
-            var (fileStart, fileEnd) = files[fileId];
-
             var fileLength = fileEnd - fileStart;
             
             var freeBlockIndex = freeBlocks.FindIndex(match => (match.end - match.start) >= fileLength);
+            if (freeBlockIndex == -1) continue;
             
-            if (freeBlockIndex != -1)
+            var freeBlock = freeBlocks[freeBlockIndex];
+                
+            var destination = compacted.Slice(freeBlock.start, fileLength);
+            var source = compacted.Slice(fileStart, fileLength);
+            if (freeBlock.start >= fileStart)
             {
-                var freeBlock = freeBlocks[freeBlockIndex];
-                
-                var destination = compacted.Slice(freeBlock.start, fileLength);
-                var source = compacted.Slice(fileStart, fileLength);
-                if (freeBlock.start >= fileStart)
-                {
-                    fileId--;
-                    continue;
-                }
-
-                source.CopyTo(destination);
-                source.Clear();
-
-                // Update freeBlocks
-                if (freeBlock.start + fileLength == freeBlock.end)
-                {
-                    freeBlocks.RemoveAt(freeBlockIndex);
-                }
-                else
-                {
-                    freeBlocks[freeBlockIndex] = freeBlock with { start = freeBlock.start + fileLength };
-                }
-                
-                freeBlocks.Add((start: fileStart, end: fileEnd));
+                continue;
             }
-            
-            fileId--;
+
+            source.CopyTo(destination);
+            source.Clear();
+
+            // Update freeBlocks
+            if (freeBlock.start + fileLength == freeBlock.end)
+            {
+                freeBlocks.RemoveAt(freeBlockIndex);
+            }
+            else
+            {
+                freeBlocks[freeBlockIndex] = freeBlock with { start = freeBlock.start + fileLength };
+            }
+                
+            freeBlocks.Add((start: fileStart, end: fileEnd));
         }
         
         return compacted.ToArray();
     }
 
-    private static Dictionary<int, (int start, int end)> ScanFiles(Span<int?> disk)
+    private static (int start, int end)[] ScanFiles(Span<int?> disk)
     {
-        Dictionary<int, (int start, int end)> files = [];
+        List<(int start, int end)> files = [];
         
         var currentPointer = 0;
         while (currentPointer < disk.Length)
@@ -158,10 +146,10 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
             while (currentPointer < disk.Length && disk[currentPointer] == currentFile) currentPointer++;
             var endBlock = currentPointer;
             
-            files.Add(currentFile, (startBlock, endBlock));
+            files.Add((startBlock, endBlock));
         }
 
-        return files;
+        return files.ToArray();
     }
 
     private static List<(int start, int end)> ScanFreeSpace(ReadOnlySpan<int?> disk)
