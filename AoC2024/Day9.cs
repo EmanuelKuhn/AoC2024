@@ -1,4 +1,6 @@
-﻿namespace AoC2024;
+﻿using System.Diagnostics;
+
+namespace AoC2024;
 
 public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
 {
@@ -18,7 +20,7 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
         return disk.Select((fileId, block) => fileId.HasValue ? (long)(fileId.Value * block): 0).Sum();
     }
 
-    private int?[] CompactDisk(int?[] disk)
+    private static int?[] CompactDisk(int?[] disk)
     {
         var compacted = disk.ToArray();
         
@@ -44,7 +46,7 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
 
     private static string DiskToString(IEnumerable<int?> disk)
     {
-        return string.Join("", disk.Select(i => i.HasValue ? i.Value.ToString() : "."));
+        return string.Concat(disk.Select(i => i?.ToString() ?? "."));
     }
 
     private static int?[] FillDisk(int[] diskMap)
@@ -89,7 +91,7 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
         
         return CheckSum(disk);    }
 
-    private int?[] CompactDiskFileWise(int?[] disk)
+    private static int?[] CompactDiskFileWise(int?[] disk)
     {
         var compacted = disk.ToArray().AsSpan();
         var freeBlocks = ScanFreeSpace(compacted);
@@ -101,8 +103,8 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
         {
             // Console.WriteLine(DiskToString(compacted.ToArray()));
             
-            var fileStart = disk.ToList().IndexOf(fileId);
-            var fileEnd = disk.ToList().LastIndexOf(fileId);
+            var fileStart = Array.IndexOf(disk, fileId);
+            var fileEnd = Array.LastIndexOf(disk, fileId) + 1;
 
             if (fileStart == -1)
             {
@@ -110,16 +112,17 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
                 continue;
             }
             
-            var fileLength = fileEnd - fileStart + 1;
-
-            var firstCandidate = freeBlocks.Where(t => (t.end - t.start) >= fileLength).Select(t => (int?)t.start).FirstOrDefault();
-
-            if (firstCandidate.HasValue)
+            var fileLength = fileEnd - fileStart;
+            
+            var freeBlockIndex = freeBlocks.FindIndex(match => (match.end - match.start) >= fileLength);
+            
+            if (freeBlockIndex != -1)
             {
-                var destination = compacted.Slice(firstCandidate.Value, fileLength);
-                var source = compacted.Slice(fileStart, fileLength);
+                var freeBlock = freeBlocks[freeBlockIndex];
                 
-                if (firstCandidate.Value >= fileStart)
+                var destination = compacted.Slice(freeBlock.start, fileLength);
+                var source = compacted.Slice(fileStart, fileLength);
+                if (freeBlock.start >= fileStart)
                 {
                     fileId--;
                     continue;
@@ -127,10 +130,18 @@ public class Day9() : AoCDay(day: 9, hasTwoInputs: false)
                 
                 source.CopyTo(destination);
                 source.Clear();
-                freeBlocks.RemoveAll(m => m.start == firstCandidate.Value);
+
+                // Update freeblocks
+                if (freeBlock.start + fileLength == freeBlock.end)
+                {
+                    freeBlocks.RemoveAt(freeBlockIndex);
+                }
+                else
+                {
+                    freeBlocks[freeBlockIndex] = freeBlock with { start = freeBlock.start + fileLength };
+                }
                 
-                // TODO: just only partly remove a free block if it's partly used instead of rescannig...
-                freeBlocks = ScanFreeSpace(compacted);
+                freeBlocks.Add((start: fileStart, end: fileEnd));
             }
             
             fileId--;
