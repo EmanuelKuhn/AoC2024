@@ -110,8 +110,6 @@ public class Day5() : AoCDay(day: 5, hasTwoInputs: false)
                 var orderedInserts = filteredSet.OrderBy(update.IndexOf).ToImmutableArray();
                 
                 orderedInserts = FindInsertOrder(rules, orderedInserts);
-
-                CorrectUpdate(CorrectUpdate([..orderedInserts], rules), rules);
                 
                 corrected.AddRange(orderedInserts);
             }
