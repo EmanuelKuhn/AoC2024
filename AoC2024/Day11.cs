@@ -8,53 +8,47 @@ public class Day11() : AoCDay(day: 11, hasTwoInputs: false)
     {
         var stones = ParseInput(input);
 
-        return ComputeResult(stones, 25);
+        return StonesCount(stones, 25);
     }
 
-    private long ComputeResult(List<long> stones, int maxSteps)
+    private long StonesCount(List<long> stones, int iterations)
     {
-        var counter = new Dictionary<long, long>();
-        stones.ForEach(s => counter[s] = 1);
-        
-        for (var i = 0; i < maxSteps; i++)
-        {
-            // Console.WriteLine($"\nIteration {i}");
-            //
-            // foreach (var stone in counter.Keys)
-            // {
-            //     Console.WriteLine($"{stone}: {counter[stone]}");
-            // }
-            
-            counter = Step(counter);
-        }
-
-        return counter.Values.Sum();
+        return stones.Count + stones.Select(stone => ComputeSplits(stone, iterations)).Sum();
     }
 
-    private static Dictionary<long, long> Step(Dictionary<long, long> counter)
-    {
-        var newCounter = new Dictionary<long, long>();
-        
-        foreach (var stone in counter.Keys)
-        {
-            var newStones = ApplyRules(stone);
-            
-            newStones.ForEach(newStone =>
-            {
-                if (newCounter.ContainsKey(newStone))
-                {
-                    newCounter[newStone] += counter[stone];
-                }
-                else
-                {
-                    newCounter[newStone] = counter[stone];
-                }
-            });
-        }
-        
-        return newCounter;
-    }
+    private readonly Dictionary<(long, long), long> _memo = new();
     
+    private long ComputeSplits(long stone, int iterations)
+    {
+        if (iterations == 0)
+        {
+            return 0;
+        }
+        
+        if (_memo.ContainsKey((stone, iterations)))
+        {
+            return _memo[(stone, iterations)];
+        }
+        
+        long splits = 0;
+        
+        var next = ApplyRules(stone);
+
+        if (next.Count == 1)
+        {
+            splits += ComputeSplits(next.First(), iterations - 1);
+        }
+        else
+        {
+            splits += 1;
+            splits += ComputeSplits(next.First(), iterations - 1) + ComputeSplits(next.Last(), iterations - 1);
+        }
+        
+        _memo.Add((stone, iterations), splits);
+        
+        return splits;
+    }
+
     private static List<long> ApplyRules(long stone)
     {
         if (stone == 0)
@@ -79,7 +73,7 @@ public class Day11() : AoCDay(day: 11, hasTwoInputs: false)
     {
         var stones = ParseInput(input);
 
-        return ComputeResult(stones, 75);
+        return StonesCount(stones, 75);
     }
 
     private static List<long> ParseInput(string input)
