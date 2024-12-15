@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using SkiaSharp;
 
 namespace AoC2024;
 
@@ -57,6 +58,27 @@ public class Day14() : AoCDay(day: 14, hasTwoInputs: false)
             
             return q1 * q2 * q3 * q4;
         }
+
+        public void Render(string path)
+        {
+            using var surface = SKSurface.Create(new SKImageInfo((int)WorldSize.C, (int)WorldSize.R));
+
+            var canvas = surface.Canvas;
+                
+            canvas.Clear(SKColors.Black);
+
+            // canvas.DrawPoints(SKPointMode.Points, _robots.Select(r => new SKPoint(r.Position.C, r.Position.R)).ToArray());
+                
+            foreach (var robot in _robots)
+            {
+                canvas.DrawPoint(robot.Position.C, robot.Position.R, SKColors.Goldenrod);
+            }
+
+            using var image = surface.Snapshot();
+            using var data = image.Encode(SKEncodedImageFormat.Png, 100);
+            using var stream = File.OpenWrite(path);
+            data.SaveTo(stream);
+        }
     }
 
     protected override long Part1(string input)
@@ -79,6 +101,19 @@ public class Day14() : AoCDay(day: 14, hasTwoInputs: false)
     
     protected override long Part2(string input)
     {
+        Vec2 worldSize = new Vec2(103, 101);
+        
+        var robots = ParseInput(input).ToList();
+        
+        var world = new World(robots, worldSize);
+
+        for (var i = 0; i < 10000; i++)
+        {
+            world.Run(1);
+            
+            world.Render($"/home/emanuel/Pictures/aoc/day14/{world.ComputeSafetyFactor()}-step-{i + 1}.png");
+        }
+
         return 0;
     }
 
