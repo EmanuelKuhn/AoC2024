@@ -1,6 +1,6 @@
 namespace AoC2024;
 
-public readonly record struct Vec2(int R, int C)
+public readonly record struct Vec2(long R, long C)
 {
     public Vec2 Moved(Vec2 v)
     {
@@ -22,7 +22,7 @@ public readonly record struct Vec2(int R, int C)
         return new Vec2(a1.R - a2.R, a1.C - a2.C);
     }
     
-    public static Vec2 operator *(int a, Vec2 b)
+    public static Vec2 operator *(long a, Vec2 b)
     {
         return new Vec2(a * b.R, a * b.C);
     }
