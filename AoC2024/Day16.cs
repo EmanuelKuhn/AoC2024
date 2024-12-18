@@ -28,8 +28,9 @@ public class Day16() : AoCDay(day: 16, hasTwoInputs: false)
         
         private Vec2 WorldSize { get; init; }
 
-        private Vec2 Start { get; }
-        private Vec2 End { get; }
+        public Vec2 Start { get; }
+
+        public Vec2 End { get; }
         
         public World(char[][] map)
         {
@@ -41,15 +42,16 @@ public class Day16() : AoCDay(day: 16, hasTwoInputs: false)
             End = map.FindFirst('E')!.Value;
         }
         
-        public long FindPath()
+        public long FindPath(out Dictionary<State, HashSet<State>> prev, out IEnumerable<State> bestEndStates)
         {
             var costs = new Dictionary<State, long>();
             var queue = new PriorityQueue<State, long>();
+            prev = new Dictionary<State, HashSet<State>>();
         
             costs[new State(Start, '>')] = 0;
             queue.Enqueue(new State(Start, '>'), costs[new State(Start, '>')]);
 
-            List<long> endCosts = [];
+            List<(long, State)> endCosts = [];
             
             while (queue.Count > 0)
             {
@@ -58,7 +60,7 @@ public class Day16() : AoCDay(day: 16, hasTwoInputs: false)
             
                 if (current.Position == End)
                 {
-                    endCosts.Add(currentCost);
+                    endCosts.Add((currentCost, current));
                 }
 
                 foreach (var (neighbour, costToNeighbor) in current.Neighbours(WorldSize))
@@ -71,11 +73,18 @@ public class Day16() : AoCDay(day: 16, hasTwoInputs: false)
                     {
                         costs[neighbour] = newCost;
                         queue.Enqueue(neighbour, newCost);
+                        prev[neighbour] = [current];
                     }
                     else
                     {
-                        if (newCost >= currentCostToNeighbor) continue;
+                        if (newCost > currentCostToNeighbor) continue;
 
+                        if (newCost == currentCostToNeighbor)
+                        {
+                            prev[neighbour].Add(current);
+                            continue;
+                        }
+                        
                         // Found a lower cost path:
                         costs[neighbour] = newCost;
                             
@@ -84,11 +93,17 @@ public class Day16() : AoCDay(day: 16, hasTwoInputs: false)
                             queue.UnorderedItems
                                 .Where(item => item.Element != neighbour)
                                 .Append((neighbour, newCost)));
+
+                        prev[neighbour] = [current];
                     }
                 }
             }
 
-            return endCosts.Count > 0 ? endCosts.Min() : -1;
+            var best = endCosts.GroupBy(t => t.Item1).MinBy(g => g.Key)!;
+
+            bestEndStates = best.Select(t => t.Item2).ToList();
+            
+            return best.Key;
         }
     }
     
@@ -98,12 +113,40 @@ public class Day16() : AoCDay(day: 16, hasTwoInputs: false)
 
         var world = new World(map);
 
-        return world.FindPath();
+        return world.FindPath(out _, out _);
     }
     
     protected override long Part2(string input)
     {
-        return 0;
+        var map = ParseInput(input);
+
+        var world = new World(map);
+
+        world.FindPath(out var prev, out var bestEndStates);
+
+        var queue = new Queue<State>(bestEndStates);
+
+        HashSet<Vec2> bestSpots = [];
+        
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            if (current.Position == world.Start)
+            {
+                bestSpots.Add(current.Position);
+                continue;
+            };
+            
+            bestSpots.Add(current.Position);
+            
+            foreach (var state in prev[current])
+            {
+                queue.Enqueue(state);
+            }
+        }
+        
+        return bestSpots.Count;
     }
 
     private static char[][] ParseInput(string input)
@@ -115,7 +158,7 @@ public class Day16() : AoCDay(day: 16, hasTwoInputs: false)
     
     [Test]
     [TestCase(1, 11048)]
-    [TestCase(2, 0)]
+    [TestCase(2, 64)]
     public void Example(int part, long expected)
     {
         var result = part switch
