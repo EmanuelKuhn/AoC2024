@@ -163,26 +163,3 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
         Assert.That(result, Is.EqualTo(expected));
     }
 }
-
-internal static class Vec2Extensions
-{
-    public static long ManhattanDistance(this Vec2 a, Vec2 b)
-    {
-        return Math.Abs(a.R - b.R) + Math.Abs(a.C - b.C); 
-    }
-    
-    public static bool IsInGrid(this Vec2 position, Vec2 gridSize)
-    {
-        return position is { C: >= 0, R: >= 0 } && position.C < gridSize.C && position.R < gridSize.R;
-    }
-
-    public static Vec2 Normalized(this Vec2 x)
-    {
-        // Turned out not to be needed...
-        var gcd = (int) BigInteger.GreatestCommonDivisor(x.C, x.R);
-
-        if (gcd == 1) return x;
-
-        return new Vec2(x.R / gcd, x.C / gcd);
-    }
-}
