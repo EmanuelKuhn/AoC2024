@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Frozen;
+using System.Diagnostics;
 using SkiaSharp;
 
 namespace AoC2024;
@@ -18,11 +19,16 @@ public class Day18() : AoCDay(day: 18, hasTwoInputs: false)
 
         var positions = ParseInput(input);
 
-        var blockedPositions = positions[..steps].ToHashSet();
+        var blockedPositions = positions[..steps].ToFrozenSet();
         Trace.Assert(blockedPositions.Count == steps);
+        
+        return FindPath(blockedPositions, gridSize);
+    }
 
-        var costs = new Dictionary<Vec2, long>();
-        var queue = new PriorityQueue<Vec2, long>();
+    private static int FindPath(FrozenSet<Vec2> blockedPositions, Vec2 gridSize)
+    {
+        var costs = new Dictionary<Vec2, int>();
+        var queue = new PriorityQueue<Vec2, int>();
         
         costs[(0, 0)] = 0;
         queue.Enqueue((0, 0), costs[(0, 0)]);
@@ -32,15 +38,16 @@ public class Day18() : AoCDay(day: 18, hasTwoInputs: false)
             var current = queue.Dequeue();
             var currentCost = costs[current];
             
-            // Console.WriteLine($"{current}: {currentCost}");
-            
-            if (current == (worldSize - 1, worldSize - 1)) return currentCost;
-            
+            if (current == gridSize - (1, 1))
+            {
+                return currentCost;
+            }
+
             foreach (var n in current.Neighbours(gridSize))
             {
                 if (blockedPositions.Contains(n)) continue;
                 
-                if (!costs.TryGetValue(n, out var cost))
+                if (!costs.TryGetValue(n, out var neighbourCost))
                 {
                     costs[n] = currentCost + 1;
                     queue.Enqueue(n, currentCost + 1);
@@ -48,21 +55,44 @@ public class Day18() : AoCDay(day: 18, hasTwoInputs: false)
                 else
                 {
                     // Found a lower cost path
-                    if (currentCost + 1 < cost)
+                    if (currentCost + 1 < neighbourCost)
                     {
-                        // costs[n] = currentCost + 1;
-                        throw new NotImplementedException("Maybe in this grid a lower cost is never found?");
+                        throw new InvalidOperationException("The square grid with equal costs should prevent finding a lower cost...");
                     }
                 }
             }
         }
         
-        throw new InvalidOperationException("Should have found the end, but didn't...");
+        return int.MaxValue;
     }
-    
+
     protected override long Part2(string input)
     {
-        return 0;
+        return Part2(input, false);
+    }
+
+    private long Part2(string input, bool isTest)
+    {
+        var worldSize = isTest ? 7 : 71;
+        var gridSize = new Vec2(worldSize, worldSize);
+        var minSteps = isTest ? 12 : 1024;
+
+        var positions = ParseInput(input);
+
+        for (var steps = minSteps; steps <= positions.Count; steps++)
+        {
+            var blockedPositions = positions[..steps].ToFrozenSet();
+            
+            if (FindPath(blockedPositions, gridSize) == int.MaxValue)
+            {
+                Console.WriteLine($"X: {positions[steps - 1].C}; Y; {positions[steps - 1].R}");
+                Console.WriteLine($"{positions[steps - 1].C},{positions[steps - 1].R}");
+                
+                return 0;
+            }
+        }
+
+        return -1;
     }
 
     private static List<Vec2> ParseInput(string input)
@@ -93,7 +123,7 @@ public class Day18() : AoCDay(day: 18, hasTwoInputs: false)
         var result = part switch
         {
             1 => Part1(ExamplePart1, true),
-            2 => Part2(ExamplePart2),
+            2 => Part2(ExamplePart2, true),
             _ => throw new ArgumentOutOfRangeException(nameof(part)),
         };
 
