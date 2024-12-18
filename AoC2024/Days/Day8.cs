@@ -132,7 +132,7 @@ public class Day8() : AoCDay(day: 8, hasTwoInputs: false)
         
         // TODO: Making an equation for the line is probably nicer at this point
         var antiNodes = Enumerable
-            .Range(-maxDim, maxDim)
+            .Range(-(int)maxDim, (int)maxDim)
             .Select(i => a1 + i * diff)
             .Where(o => o.IsInGrid(size))
             .Concat([a1, a2])
